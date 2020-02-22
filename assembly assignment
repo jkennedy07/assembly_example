@@ -1,0 +1,165 @@
+	#########################################
+	# 	Comp. Sys. & Assembly Lang.	#
+	# 	UALR - Fall 2019 - Cetinsaya	#
+	# 	Assignment #4			#
+	# 	Jason Kennedy			#
+	#########################################
+
+# SPECIFICATION:
+# Obtain inputs from the user by asking appropriate questions
+# Information needed:
+#	First name
+#	Last name
+#	Age
+#	Gender
+#	Phone number
+# Write the information to a file with commas between each input.
+# Bonus 1:
+#	Use a comma procedure to insert the commas after each 
+#	input.
+# Bonus 2: 
+#	When all five questions are asked, continue asking 
+#	questions until a blank character is given as input for 
+#	the 'First name' field.
+
+.data
+	outputFileName: .asciiz "a4output.txt"
+	buffer: .space 20
+	
+	commaChar: .asciiz ","
+	endLine: .asciiz "\n"
+	
+	firstNamePrompt: .asciiz "\nPlease input your first name: "
+	lastNamePrompt: .asciiz "\nPlease input your last name: "
+	agePrompt: .asciiz "\nPlease enter your age: "
+	genderPrompt: .asciiz "\nPlease enter your gender (m/f/x): "
+	phonePrompt: .asciiz "\nPlease enter your phone number (without dashes): "
+	exitPrompt: .asciiz "(or enter a blank character to exit)"
+	
+.text	
+	jal openFile
+	
+	la $a0, firstNamePrompt		# "do" 
+	jal printStringZ
+	jal readString
+	
+##### MAIN FUNCTION #####
+main:	
+	jal writeToFile
+	jal writeComma
+	
+	la $a0, lastNamePrompt
+	jal printStringZ
+	jal readString
+	jal writeToFile
+	jal writeComma
+	
+	la $a0, agePrompt
+	jal printStringZ
+	jal readString
+	jal writeToFile
+	jal writeComma
+	
+	la $a0, genderPrompt
+	jal printStringZ
+	jal readString
+	jal writeToFile
+	jal writeComma
+	
+	la $a0, phonePrompt
+	jal printStringZ
+	jal readString
+	jal writeToFile
+	jal writeEndl
+	
+	la $a0, firstNamePrompt
+	jal printStringZ
+	la $a0, exitPrompt
+	jal printStringZ
+	jal readString
+	
+	jal checkInputToExit	
+	b main
+##### END MAIN #####
+	
+openFile:
+	li $v0, 13 		
+	la $a0, outputFileName	
+	li $a1, 9 		# 9 = write and append
+	li $a2, 0		
+	syscall			
+	move $s1, $v0  		# file descriptor saved in $s1
+	jr $ra
+	
+closeFile:
+	li $v0, 16  		
+	move $a0, $s1		
+	syscall 		
+	jr $ra
+	
+readString:
+	li $v0, 8 
+	la $a0, buffer 
+	li $a1, 20 
+	syscall
+	jr $ra	
+	
+writeToFile:
+	li $v0, 15 		
+	move $a0, $s1 		
+	la $a1, buffer	 	# address of source to write	
+    # loop to find end of string
+	li $t0, 0		# initial loop counter
+  	li $t1, 20		# loop end
+    findTerminator:
+ 	beq $t0, $t1, terminatorFound
+	lb $t3, buffer($t0)
+    	beq $t3, 10, terminatorFound
+    	addi $t0, $t0, 1
+	j findTerminator	
+      terminatorFound:
+	move $a2, $t0
+	syscall
+	jr $ra
+	
+writeComma:
+	li $v0,15 		# write to file
+	move $a0, $s1 		
+	la $a1, commaChar 	
+	li $a2, 1 		# length 1
+	syscall 		
+	jr $ra
+	
+writeEndl:
+	li $v0,15 		
+	move $a0, $s1 		
+	la $a1, endLine 	
+	li $a2, 1 		
+	syscall 		
+	jr $ra
+
+checkInputToExit:
+	la $t5, buffer
+	lb $s3, 0($t5)
+	beq $s3, 0, exit 	# check null
+	beq $s3, 10, exit	# check new line
+	beq $s3, 13, exit	# check carriage return
+	beq $s3, 32, exit 	# check space
+	jr $ra 
+	
+printStringZ: 
+	li $v0, 4
+	syscall
+	la $a0, endLine
+	li $v0, 4
+	syscall
+	jr $ra	
+
+exit:
+	li $v0, 10
+	syscall
+	
+	
+
+
+
